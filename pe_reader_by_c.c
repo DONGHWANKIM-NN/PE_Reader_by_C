@@ -4,10 +4,14 @@
 #include <unistd.h>
 #include <stdint.h>
 
+
+// 데이터 형식 범위
 typedef unsigned short WORD;
 typedef unsigned long DWORD;
+typedef unsigned char BYTE;
+typedef unsigned long long ULONGLONG;
 
-// WinNT.h
+// MS DOS HEADER
 typedef struct _IMAGE_DOS_HEADER {
     WORD e_magic;    /* 00: MZ Header signature */
     WORD e_cblp;     /* 02: Bytes on last page of file */
@@ -29,6 +33,66 @@ typedef struct _IMAGE_DOS_HEADER {
     WORD e_res2[10]; /* 28: Reserved words */
     DWORD e_lfanew;  /* 3c: Offset to extended header */
 } IMAGE_DOS_HEADER;
+
+// PE HEADER(NT HEADER)
+typedef struct _IMAGE_NT_HEADERS64 {
+  DWORD Signature;
+  IMAGE_FILE_HEADER FileHeader;
+  IMAGE_OPTIONAL_HEADER64 OptionalHeader;
+} IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;
+
+// PE HEADER 중 PE(NT) IMAGE FILE HEADER
+typedef struct _IMAGE_FILE_HEADER {
+  WORD  Machine;
+  WORD  NumberOfSections;
+  DWORD TimeDateStamp;
+  DWORD PointerToSymbolTable;
+  DWORD NumberOfSymbols;
+  WORD  SizeOfOptionalHeader;
+  WORD  Characteristics;
+} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
+
+// PE HEADER 중 PE(NT) IMAGE OPTIONAL HEADER
+#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
+
+typedef struct _IMAGE_OPTIONAL_HEADER64 {
+  WORD  Magic; /* 0x20b */
+  BYTE MajorLinkerVersion;
+  BYTE MinorLinkerVersion;
+  DWORD SizeOfCode;
+  DWORD SizeOfInitializedData;
+  DWORD SizeOfUninitializedData;
+  DWORD AddressOfEntryPoint;
+  DWORD BaseOfCode;
+  ULONGLONG ImageBase;
+  DWORD SectionAlignment;
+  DWORD FileAlignment;
+  WORD MajorOperatingSystemVersion;
+  WORD MinorOperatingSystemVersion;
+  WORD MajorImageVersion;
+  WORD MinorImageVersion;
+  WORD MajorSubsystemVersion;
+  WORD MinorSubsystemVersion;
+  DWORD Win32VersionValue;
+  DWORD SizeOfImage;
+  DWORD SizeOfHeaders;
+  DWORD CheckSum;
+  WORD Subsystem;
+  WORD DllCharacteristics;
+  ULONGLONG SizeOfStackReserve;
+  ULONGLONG SizeOfStackCommit;
+  ULONGLONG SizeOfHeapReserve;
+  ULONGLONG SizeOfHeapCommit;
+  DWORD LoaderFlags;
+  DWORD NumberOfRvaAndSizes;
+  IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
+
+// IMAGE DATA DIRECTORY
+typedef struct _IMAGE_DATA_DIRECTORY {
+  DWORD VirtualAddress;
+  DWORD Size;
+} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
 
 
 int main(int argc, const char* argv[]) {
