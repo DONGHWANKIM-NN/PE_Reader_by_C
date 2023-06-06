@@ -43,8 +43,6 @@ int main(int argc, const char** argv[]) {
   print_dosheader(dos_header);
 
 
-
-
   // 파일 포인터 위치 변경
   fpPosition = dos_header.e_lfanew;
   fseek(fp, fpPosition, SEEK_SET);
@@ -117,7 +115,7 @@ int main(int argc, const char** argv[]) {
   // printf("%s\n\n\n", section);
 
   // }
-  for(int i = 0; i+1 <= section_header.SizeOfRawData; i++){
+  for(int i = 0; i+1 <= pe_header.FileHeader.NumberOfSections; i++){
     fpPosition = listfpPosition[i];
     fseek(fp, fpPosition, SEEK_SET);
 
@@ -127,7 +125,9 @@ int main(int argc, const char** argv[]) {
     for(int j = 0; j <= section_header.SizeOfRawData; j++){
       printf("%c", section[i]);
     }
+
   }
+  
 
 
 
