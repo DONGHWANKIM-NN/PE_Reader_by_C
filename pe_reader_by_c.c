@@ -102,11 +102,11 @@ int main(int argc, const char** argv[]) {
   
 
   //SECTION 읽겠습니다!! 근데 어떻게 읽으면 좋냐... 구조체도 없는데
-  fpPosition = fseek(fp, section_header.PointerToLinenumbers, SEEK_SET); // pointer to raw data를 이용해서 file offset을 section 앞으로 가져갈 거다.
+  fpPosition = fseek(fp, section_header.PointerToRawData, SEEK_SET); // pointer to raw data를 이용해서 file offset을 section 앞으로 가져갈 거다.
   
   for(int i = 0; i + 1 <= pe_header.FileHeader.NumberOfSections; i++){
   char section; // 긴 section을 담을 공간.
-  
+
   fread(&section, section_header.SizeOfRawData, 1, fp);
   printf("%s\n", section_header.Name[i]);
   printf("%s\n\n\n", section);
