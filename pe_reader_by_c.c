@@ -88,12 +88,17 @@ int main(int argc, const char** argv[]) {
   //section header 읽기
   IMAGE_SECTION_HEADER section_header;
 
+  int listfpPosition[7];
+
   int sizeofrawdata[20];
   //section header 출력
   printf("\nSECTION HEADER\n");
-  for(int i = 1; i<=pe_header.FileHeader.NumberOfSections; i++){
+  for(int i = 0; i+1<=pe_header.FileHeader.NumberOfSections; i++){
+    
+  listfpPosition[i] = section_header.PointerToRawData;
+
   fread(&section_header, sizeof(section_header), 1, fp);
-  sizeofrawdata[i-1] = sizeof(section_header);
+  sizeofrawdata[i] = sizeof(section_header);
   print_sectionheader(section_header);
   }
 
@@ -102,17 +107,27 @@ int main(int argc, const char** argv[]) {
   
 
   //SECTION 읽겠습니다!! 근데 어떻게 읽으면 좋냐... 구조체도 없는데
-  fpPosition = fseek(fp, section_header.PointerToRawData, SEEK_SET); // pointer to raw data를 이용해서 file offset을 section 앞으로 가져갈 거다.
+  // fpPosition = fseek(fp, section_header.PointerToRawData, SEEK_SET); // pointer to raw data를 이용해서 file offset을 section 앞으로 가져갈 거다.
   
-  for(int i = 0; i + 1 <= pe_header.FileHeader.NumberOfSections; i++){
-  char section; // 긴 section을 담을 공간.
+  // for(int i = 0; i + 1 <= pe_header.FileHeader.NumberOfSections; i++){
+  // char section; // 긴 section을 담을 공간.
 
-  fread(&section, section_header.SizeOfRawData, 1, fp);
-  printf("%s\n", section_header.Name[i]);
-  printf("%s\n\n\n", section);
+  // fread(&section, section_header.SizeOfRawData, 1, fp);
+  // printf("%s\n", section_header.Name[i]);
+  // printf("%s\n\n\n", section);
 
+  // }
+  for(int i = 0; i+1 <= section_header.SizeOfRawData; i++){
+    fpPosition = listfpPosition[i];
+    fseek(fp, fpPosition, SEEK_SET);
+
+    char *section = (char *)malloc(sizeof(char)*section_header.SizeOfRawData);
+    fread(section, section_header.SizeOfRawData, 1, fp);
+
+    for(int j = 0; j <= section_header.SizeOfRawData; j++){
+      printf("%c", section[i]);
+    }
   }
-
 
 
 
