@@ -22,7 +22,7 @@ int main(int argc, const char** argv[]) {
   FILE *fp;
 
   //@brief 파일 open, 실패 시 프로그램을 종료
-  fp = fopen(argv[1]/*프로그램 매개변수로 받은 파일 이름*/, "rb" /*바이너리 읽기 모드*/);
+  fp = fopen("/home/hwnnhji/PE_Reader_by_C/notepad.exe"/*프로그램 매개변수로 받은 파일 이름*/, "rb" /*바이너리 읽기 모드*/);
 
 
 
@@ -84,20 +84,24 @@ int main(int argc, const char** argv[]) {
 
 
   //section header 읽기
-  IMAGE_SECTION_HEADER section_header;
-
-  int listfpPosition[7];
+  
+  /*malloc을 해주는 이유는 다음과 같다. malloc을 해서 따로 공간을 마련해, section header의 공간 자체를 동적할당으로 저장해놓으면 세상에 */
+  
+  IMAGE_SECTION_HEADER* section_header = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER)*pe_header.FileHeader.NumberOfSections);
 
   int sizeofrawdata[20];
   //section header 출력
   printf("\nSECTION HEADER\n");
-  for(int i = 0; i+1<=pe_header.FileHeader.NumberOfSections; i++){
-    
-  listfpPosition[i] = section_header.PointerToRawData;
+  for(int i = 0; i<pe_header.FileHeader.NumberOfSections; i++){
+    fread(&section_header[i], sizeof(IMAGE_SECTION_HEADER), 1, fp);
+    print_sectionheader(section_header[i]);
+  }
 
-  fread(&section_header, sizeof(section_header), 1, fp);
-  sizeofrawdata[i] = sizeof(section_header);
-  print_sectionheader(section_header);
+
+
+  //section 출력
+  for(int i = 0; i<pe_header.FileHeader.NumberOfSections; i++){
+    // 뚜루루루 뚜루루
   }
 
 
@@ -114,19 +118,19 @@ int main(int argc, const char** argv[]) {
   // printf("%s\n", section_header.Name[i]);
   // printf("%s\n\n\n", section);
 
+  // // }
+  // for(int i = 0; i+1 <= pe_header.FileHeader.NumberOfSections; i++){
+  //   fpPosition = listfpPosition[i];
+  //   fseek(fp, fpPosition, SEEK_SET);
+
+  //   char *section = (char *)malloc(sizeof(char)*section_header.SizeOfRawData);
+  //   fread(section, section_header.SizeOfRawData, 1, fp);
+
+  //   for(int j = 0; j <= section_header.SizeOfRawData; j++){
+  //     printf("%c", section[i]);
+  //   }
+
   // }
-  for(int i = 0; i+1 <= pe_header.FileHeader.NumberOfSections; i++){
-    fpPosition = listfpPosition[i];
-    fseek(fp, fpPosition, SEEK_SET);
-
-    char *section = (char *)malloc(sizeof(char)*section_header.SizeOfRawData);
-    fread(section, section_header.SizeOfRawData, 1, fp);
-
-    for(int j = 0; j <= section_header.SizeOfRawData; j++){
-      printf("%c", section[i]);
-    }
-
-  }
   
 
 

@@ -156,7 +156,7 @@ typedef struct _IMAGE_SECTION_HEADER {
  * dos header를 출력하는 함수
 */
 void print_dosheader(IMAGE_DOS_HEADER dos_header);
-
+// 
 void print_peheader(IMAGE_NT_HEADERS64 pe_header);
 
 void print_pefileheader(IMAGE_FILE_HEADER pe_file_header);
