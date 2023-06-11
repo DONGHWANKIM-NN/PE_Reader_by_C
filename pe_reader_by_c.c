@@ -22,7 +22,7 @@ int main(int argc, const char** argv[]) {
   FILE *fp;
 
   //@brief 파일 open, 실패 시 프로그램을 종료
-  fp = fopen("/home/hwnnhji/PE_Reader_by_C/notepad.exe"/*프로그램 매개변수로 받은 파일 이름*/, "rb" /*바이너리 읽기 모드*/);
+  fp = fopen("/home/hwnnhji/PE_Reader_by_C/notepad.exe"/*argv[1]*//*프로그램 매개변수로 받은 파일 이름*/, "rb" /*바이너리 읽기 모드*/);
 
 
 
@@ -85,61 +85,192 @@ int main(int argc, const char** argv[]) {
 
   //section header 읽기
   
-  /*malloc을 해주는 이유는 다음과 같다. malloc을 해서 따로 공간을 마련해, section header의 공간 자체를 동적할당으로 저장해놓으면 세상에 */
-  
+  /*malloc을 해주는 이유는 다음과 같다. malloc을 해서 따로 공간을 마련해, section header의 공간 자체를 동적할당으로 저장해놓으면 */
   IMAGE_SECTION_HEADER* section_header = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER)*pe_header.FileHeader.NumberOfSections);
 
-  int sizeofrawdata[20];
+  int number_of_sections = pe_header.FileHeader.NumberOfSections;
+
   //section header 출력
   printf("\nSECTION HEADER\n");
-  for(int i = 0; i<pe_header.FileHeader.NumberOfSections; i++){
+  for(int i = 0; i < number_of_sections; i++){
     fread(&section_header[i], sizeof(IMAGE_SECTION_HEADER), 1, fp);
     print_sectionheader(section_header[i]);
   }
+  printf("\n\n");
+
 
 
 
   //section 출력
-  for(int i = 0; i<pe_header.FileHeader.NumberOfSections; i++){
-    // 뚜루루루 뚜루루
+  for(int i = 0; i < number_of_sections; i++){
+    printf("\n%s\n", section_header[i].Name);
+    fseek(fp, section_header[i].PointerToRawData, SEEK_SET); // 위에서 malloc 받을 걸 일부러 그대로 유지해서, 그 값으로 fseek을 진행함.
+
+    char* section_list = (char *) malloc(sizeof(char) * section_header[i].SizeOfRawData); // 하나씩 fread받아서 바로바로 1개씩 출력하게 할까 싶었는데, 안되길래 malloc으로 전체를 받음.
+    fread(section_list, section_header[i].SizeOfRawData, 1, fp); //section_list가 이미 malloc으로 받은 '주소'값이기 때문에 &section_list 같은 &는 필요없다.
+    
+    for(int j = 0; j <= section_header[i].SizeOfRawData; j++){
+      printf("%x ", (unsigned char) section_list[j]); //여기서 unsigned char을 붙이는 이유는 오버플로우 때문이다. 정확한 이유는 모르겠으나 관련 웹사이트를 남겨놓음
+                                                      /* https://kldp.org/node/30346
+                                                        https://stackoverflow.com/questions/7188919/the-x-format-specifier-with-an-unsigned-char-in-c*/
+    }
+    free(section_list);
+  }
+  printf("\n\n\n\n");
+
+
+
+
+
+  //RVA to RAW 함수
+  /* 1. File에 File Offset이 있다면 Memory에는 Virtual Address가 있다.
+     2. 즉 Virtual Address라는 개념은 메모리에서의 절대주소값이며, 이는 상대주소인 RVA에 ImageBase를 더한 값과 같다.
+     3. RAW는 File에서의 Offset을 의미하는 것이고, RVA는 Memory에서의 상대주소를 의미하는 것이다.
+     4. RVA - PointerToRawData = RAW - VirtualAddress이다. 즉 Memory상대위치 - File에서의 각 Section의 시작위치 = FileOffset - Memory절대위치 라고! 생각할 수 있지만....
+     5. 4번의 식에서의 Virtual Address는 2에서 정의한 Memory에서의 절대주소값이란 개념을 의미하는 게 아니다. 이는 Section Header 내에 위치하는 VirtualAddress값을 의미하며 이는 Memory에서 Section의 RVA를 의미한다.
+     6. 따라서 식은 'Memory상대위치 - File에서 각 Section의 시작위치 = FileOffset - Memory에서 각 Section의 시작위치'로 정리할 수 있다.*/
+  //함수를 만들기 위한 요소
+  /* 1. rva와 raw는 서로 '구하거나', '받거나' 둘 중 하나로 충당되어야 함.
+     2. PointerToRawData과 VirtualAddress는 section header에 존재.
+     3. 따라서 RVA를 구하려면 RAW를 받아야 하며, RAW를 구하려면 RVA를 받아야 함.*/
+ 
+  //기본적인 Define
+  int rva, raw;
+  char rvaorraw;
+
+
+  //RVA to RAW v.s. RAW to RVA
+  printf("RVA(a) or RAW(w)(to evaluate)\n");
+  scanf("%c", &rvaorraw);
+  printf("%c를 입력받음\n", rvaorraw);
+
+
+  // RAW to RVA
+
+  if(rvaorraw == 'a'){
+    printf("RAW를 입력\n");
+    scanf("%x", &raw);
+    
+    // File Offset(RAW)가 어느 Section에 들어있는지 확인하는 과정
+    unsigned int sectionheaderposition; //raw가 어느 section 중간에 들어가있는지를 확인하는 과정
+    
+    // for(int k = 0; k <= number_of_sections; k++){
+    //   if(section_header[k].PointerToRawData <= raw & raw < section_header[k+1].PointerToRawData){
+    //     sectionheaderposition = k;
+    //   }
+    //   else{
+    //     continue;
+    //   }
+    // }
+
+    if(section_header[0].PointerToRawData <= raw){
+      if(section_header[1].PointerToRawData <= raw){
+        if(section_header[2].PointerToRawData <= raw){
+          if(section_header[3].PointerToRawData <= raw){
+            if(section_header[4].PointerToRawData <= raw){
+              if(section_header[5].PointerToRawData <= raw){
+                if(section_header[6].PointerToRawData <= raw){
+                  if(section_header[7].PointerToRawData <= raw){
+                    sectionheaderposition = 7;
+                  }
+                  else{
+                    sectionheaderposition = 6;
+                  }
+                }
+                else{
+                  sectionheaderposition = 5;
+                }
+              }
+              else{
+                sectionheaderposition = 4;
+              }
+            }
+            else{
+              sectionheaderposition = 3;
+            }
+          }
+          else{
+            sectionheaderposition = 2;
+          }
+        }
+        else{
+          sectionheaderposition = 1;
+        }
+      }
+      else{
+        sectionheaderposition = 0;
+      }
+    }
+    else{
+      printf("제대로된 값을 입력 요망.\n");
+    }
+
+    printf("입력하신 %x 값은 %d번째 Section; %s에 포함된 값입니다.\n", raw, sectionheaderposition, section_header[sectionheaderposition].Name);
+    //raw와, raw가 포함된 section 내의 VirtualAddress와 pointertorawdata를 이용하여 rva 구하기.
+    rva = raw - section_header[sectionheaderposition].PointerToRawData + section_header[sectionheaderposition].VirtualAddress;
+    printf("rva : %x\n", rva);
   }
 
 
+  // RVA to RAW
+
+  else if(rvaorraw == 'w'){
+    printf("RVA를 입력\n");
+    scanf("%x", &rva);
+
+    // RVA가 어느 Section에 들어있는지 확인하는 과정
+    int sectionheaderposition; //raw가 어느 section 중간에 들어가있는지를 확인하는 과정
+
+    if(section_header[0].VirtualAddress <= rva){
+      if(section_header[1].VirtualAddress <= rva){
+        if(section_header[2].VirtualAddress <= rva){
+          if(section_header[3].VirtualAddress <= rva){
+            if(section_header[4].VirtualAddress <= rva){
+              if(section_header[5].VirtualAddress <= rva){
+                if(section_header[6].VirtualAddress <= rva){
+                  if(section_header[7].VirtualAddress <= rva){
+                    sectionheaderposition = 7;
+                  }
+                  else{
+                    sectionheaderposition = 6;
+                  }
+                }
+                else{
+                  sectionheaderposition = 5;
+                }
+              }
+              else{
+                sectionheaderposition = 4;
+              }
+            }
+            else{
+              sectionheaderposition = 3;
+            }
+          }
+          else{
+            sectionheaderposition = 2;
+          }
+        }
+        else{
+          sectionheaderposition = 1;
+        }
+      }
+      else{
+        sectionheaderposition = 0;
+      }
+    }
+    else{
+      printf("제대로된 값을 입력 요망.\n");
+    }
+
+    printf("입력하신 %x 값은 %d번째 Section; %s에 포함된 값입니다.\n", rva, sectionheaderposition, section_header[sectionheaderposition].Name);
+    //raw와, raw가 포함된 section 내의 VirtualAddress와 pointertorawdata를 이용하여 rva 구하기.
+    raw = rva - section_header[sectionheaderposition].VirtualAddress + section_header[sectionheaderposition].PointerToRawData;
+    printf("raw : %x\n", raw);
+  }
 
   
-
-  //SECTION 읽겠습니다!! 근데 어떻게 읽으면 좋냐... 구조체도 없는데
-  // fpPosition = fseek(fp, section_header.PointerToRawData, SEEK_SET); // pointer to raw data를 이용해서 file offset을 section 앞으로 가져갈 거다.
-  
-  // for(int i = 0; i + 1 <= pe_header.FileHeader.NumberOfSections; i++){
-  // char section; // 긴 section을 담을 공간.
-
-  // fread(&section, section_header.SizeOfRawData, 1, fp);
-  // printf("%s\n", section_header.Name[i]);
-  // printf("%s\n\n\n", section);
-
-  // // }
-  // for(int i = 0; i+1 <= pe_header.FileHeader.NumberOfSections; i++){
-  //   fpPosition = listfpPosition[i];
-  //   fseek(fp, fpPosition, SEEK_SET);
-
-  //   char *section = (char *)malloc(sizeof(char)*section_header.SizeOfRawData);
-  //   fread(section, section_header.SizeOfRawData, 1, fp);
-
-  //   for(int j = 0; j <= section_header.SizeOfRawData; j++){
-  //     printf("%c", section[i]);
-  //   }
-
-  // }
-  
-
-
-
-  
-
-
-
-
+  free(section_header);
 
   //@brief 파일 close. 실패시 exit
   if (fclose(fp) != NULL) {
